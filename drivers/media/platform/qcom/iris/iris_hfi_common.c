@@ -3,12 +3,18 @@
  * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
+#include <linux/moduleparam.h>
 #include <linux/pm_runtime.h>
 
 #include "iris_firmware.h"
 #include "iris_core.h"
 #include "iris_hfi_common.h"
 #include "iris_vpu_common.h"
+
+unsigned int iris_fw_debug = IRIS_FW_DEBUG_ERROR | IRIS_FW_DEBUG_FATAL;
+module_param_named(fw_debug, iris_fw_debug, uint, 0644);
+MODULE_PARM_DESC(fw_debug,
+		 "Firmware debug log bitmask: low=0x1 medium=0x2 high=0x4 error=0x8 fatal=0x10 perf=0x20");
 
 u32 iris_hfi_get_v4l2_color_primaries(u32 hfi_primaries)
 {
@@ -86,6 +92,14 @@ int iris_hfi_core_init(struct iris_core *core)
 	ret = hfi_ops->sys_image_version(core);
 	if (ret)
 		return ret;
+
+	if (hfi_ops->sys_set_debug) {
+		ret = hfi_ops->sys_set_debug(core);
+		if (ret)
+			dev_warn(core->dev,
+				 "failed to configure firmware debug logging: %d\n",
+				 ret);
+	}
 
 	return hfi_ops->sys_interframe_powercollapse(core);
 }

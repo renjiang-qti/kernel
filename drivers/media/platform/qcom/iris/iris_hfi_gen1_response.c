@@ -750,6 +750,15 @@ static void iris_hfi_gen1_handle_response(struct iris_core *core, void *response
 	}
 }
 
+static void iris_hfi_gen1_log_fw_debug(struct iris_core *core,
+				       struct hfi_msg_sys_debug_pkt *pkt)
+{
+	if (pkt->msg_type & (IRIS_FW_DEBUG_ERROR | IRIS_FW_DEBUG_FATAL))
+		dev_err_ratelimited(core->dev, "%s", pkt->msg_data);
+	else
+		dev_dbg(core->dev, "%s", pkt->msg_data);
+}
+
 static void iris_hfi_gen1_flush_debug_queue(struct iris_core *core, u8 *packet)
 {
 	struct hfi_msg_sys_coverage_pkt *pkt;
@@ -761,7 +770,7 @@ static void iris_hfi_gen1_flush_debug_queue(struct iris_core *core, u8 *packet)
 			struct hfi_msg_sys_debug_pkt *pkt =
 				(struct hfi_msg_sys_debug_pkt *)packet;
 
-			dev_dbg(core->dev, "%s", pkt->msg_data);
+			iris_hfi_gen1_log_fw_debug(core, pkt);
 		}
 	}
 }

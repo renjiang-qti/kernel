@@ -986,6 +986,15 @@ static int iris_hfi_gen2_handle_response(struct iris_core *core, void *response)
 		return iris_hfi_gen2_handle_session_response(core, hdr);
 }
 
+static void iris_hfi_gen2_log_fw_debug(struct iris_core *core,
+				       struct hfi_debug_header *pkt, u8 *log)
+{
+	if (pkt->debug_level & (IRIS_FW_DEBUG_ERROR | IRIS_FW_DEBUG_FATAL))
+		dev_err_ratelimited(core->dev, "%s", log);
+	else
+		dev_dbg(core->dev, "%s", log);
+}
+
 static void iris_hfi_gen2_flush_debug_queue(struct iris_core *core, u8 *packet)
 {
 	struct hfi_debug_header *pkt;
@@ -1002,7 +1011,7 @@ static void iris_hfi_gen2_flush_debug_queue(struct iris_core *core, u8 *packet)
 
 		packet[pkt->size] = '\0';
 		log = (u8 *)packet + sizeof(*pkt) + 1;
-		dev_dbg(core->dev, "%s", log);
+		iris_hfi_gen2_log_fw_debug(core, pkt, log);
 	}
 }
 
